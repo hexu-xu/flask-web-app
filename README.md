@@ -63,8 +63,8 @@ python -m pytest tests/ -v
    | --- | --- | --- |
    | Repository secret | `TOUGE_SSH_PRIVATE_KEY` | 专用私钥的完整内容，包括头尾标记 |
    | Repository secret | `TOUGE_SERVER_IP` | 头歌当前公网 IP |
-   | Repository variable | `TOUGE_SSH_PORT` | 头歌实际 SSH 端口，不要照抄教程示例 |
-   | Repository variable | `TOUGE_SSH_USER` | 服务器登录用户，当前配置预期为 `root` |
+   | Repository variable（可选） | `TOUGE_SSH_PORT` | 头歌实际 SSH 端口；未设置时使用当前端口 `53647` |
+   | Repository variable（可选） | `TOUGE_SSH_USER` | 服务器登录用户；未设置时使用 `root` |
 
    工作流使用 `/root/flask-web-app` 路径，所以上面的部署配置预期用 root 登录。若平台只能以其他用户登录，需同步修改仓库路径、Supervisor 配置与工作流。服务器 IP 或端口发生变化时，更新对应 GitHub 值。
 

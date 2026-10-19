@@ -34,8 +34,8 @@ jobs:
         env:
           TOUGE_SSH_PRIVATE_KEY: ${{ secrets.TOUGE_SSH_PRIVATE_KEY }}
           TOUGE_SERVER_IP: ${{ secrets.TOUGE_SERVER_IP }}
-          TOUGE_SSH_PORT: ${{ vars.TOUGE_SSH_PORT }}
-          TOUGE_SSH_USER: ${{ vars.TOUGE_SSH_USER }}
+          TOUGE_SSH_PORT: ${{ vars.TOUGE_SSH_PORT || '53647' }}
+          TOUGE_SSH_USER: ${{ vars.TOUGE_SSH_USER || 'root' }}
         run: |
           set -euo pipefail
           : "${TOUGE_SSH_PRIVATE_KEY:?Set the TOUGE_SSH_PRIVATE_KEY repository secret}"
