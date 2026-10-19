@@ -1,0 +1,65 @@
+name: Test and deploy Flask app
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - name: Install dependencies
+        run: |
+          python -m pip install -r requirements.txt
+          python -m pip install pytest==8.4.1
+      - name: Run tests
+        run: python -m pytest tests/ -v
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Deploy through SSH
+        env:
+          TOUGE_SSH_PRIVATE_KEY: ${{ secrets.TOUGE_SSH_PRIVATE_KEY }}
+          TOUGE_SERVER_IP: ${{ secrets.TOUGE_SERVER_IP }}
+          TOUGE_SSH_PORT: ${{ vars.TOUGE_SSH_PORT }}
+          TOUGE_SSH_USER: ${{ vars.TOUGE_SSH_USER }}
+        run: |
+          set -euo pipefail
+          : "${TOUGE_SSH_PRIVATE_KEY:?Set the TOUGE_SSH_PRIVATE_KEY repository secret}"
+          : "${TOUGE_SERVER_IP:?Set the TOUGE_SERVER_IP repository secret}"
+          : "${TOUGE_SSH_PORT:?Set the TOUGE_SSH_PORT repository variable}"
+          : "${TOUGE_SSH_USER:?Set the TOUGE_SSH_USER repository variable}"
+          [[ "$TOUGE_SSH_PORT" =~ ^[0-9]+$ ]] || { echo 'SSH port must be numeric'; exit 1; }
+
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          key_file="$(mktemp ~/.ssh/deploy_key.XXXXXX)"
+          trap 'rm -f "$key_file"' EXIT
+          printf '%s\n' "$TOUGE_SSH_PRIVATE_KEY" > "$key_file"
+          chmod 600 "$key_file"
+          ssh-keyscan -p "$TOUGE_SSH_PORT" -H "$TOUGE_SERVER_IP" >> ~/.ssh/known_hosts
+
+          ssh -i "$key_file" -p "$TOUGE_SSH_PORT" \
+            -o BatchMode=yes -o StrictHostKeyChecking=yes \
+            "$TOUGE_SSH_USER@$TOUGE_SERVER_IP" 'bash -se' <<'REMOTE'
+          set -euo pipefail
+          cd /root/flask-web-app
+          git pull --ff-only origin main
+          python3 -m pip install -r requirements.txt
+          supervisorctl restart flask-web-app
+          supervisorctl status flask-web-app
+          curl --fail --silent --show-error http://127.0.0.1:5000/
+          REMOTE
