@@ -2,6 +2,11 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 .venv/
+build/
+dist/
+*.spec
+htmlcov/
+.coverage
 *.log
 .env
 id_rsa*
